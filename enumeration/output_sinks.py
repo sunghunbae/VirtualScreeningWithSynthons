@@ -23,6 +23,8 @@ class ParquetSink:
     def __init__(self, out_dir: str, prefix: str = 'part', compression: str = 'zstd'):
         if pq is None:
             raise ImportError("pyarrow is required for ParquetSink")
+        if pq is None:
+            raise ImportError("pyarrow is required for ParquetSink")
         self.out_dir = str(out_dir)
         self.prefix = prefix
         self.compression = compression
@@ -43,7 +45,7 @@ class ParquetSink:
         self._n_batches += 1
 
     def finalize(self, extra: Optional[Dict[str, Any]] = None, write_manifest: bool = True) -> OutputSummary:
-        extra = extra or {} # if not exist
+        extra = extra or {} # if not exist make empty
         summary = OutputSummary(
             out_dir=self.out_dir,
             shards=list(self._shards),
@@ -51,7 +53,7 @@ class ParquetSink:
             n_batches=self._n_batches,
             extra=extra,
         )
-        if write_manifest:
+        if write_manifest: # output json information snippet to quickly see what was done
             manifest_path = os.path.join(self.out_dir, 'manifest.json')
             with open(manifest_path, 'w') as f:
                 json.dump({

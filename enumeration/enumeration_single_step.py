@@ -244,7 +244,7 @@ class SingleStepEnumerator:
                     continue
             
                 
-                # Seed mol used repeatedly; synthon mol created lazily.
+                # Seed mol used repeatedly; synthon mol created lazily. set here to match
                 seed_mol = can_mol
                 seed_mol = prep_mol_for_enum([seed_mol])[0]
                
@@ -266,7 +266,8 @@ class SingleStepEnumerator:
                         syn_mol = Chem.MolFromSmiles(syn_rec.synthon_smiles)
                         try:
                             syn_mol = prep_mol_for_enum([syn_mol])[0] 
-                       
+
+                            # skip malformed or incomplete
                             if syn_mol is None:
                                 continue
                         
@@ -276,7 +277,7 @@ class SingleStepEnumerator:
                             continue
                         # try every compatible reaction
                         for tpl, order in rxn_list:
-                            rxn = self.reactions.get_compiled(tpl.reaction_id)
+                            rxn = self.reactions.get_compiled(tpl.reaction_id) # my own function of get_compiled
                            
                             reactants = (seed_mol, syn_mol) if order == 0 else (syn_mol, seed_mol)
                             
@@ -289,7 +290,7 @@ class SingleStepEnumerator:
                             except Exception:
                                 continue
                             
-                            # nothing made for this combination, move on
+                            # nothing made for this combination, move on to next synthon
                             if not prod_sets:
                                 continue
 
@@ -347,7 +348,7 @@ class SingleStepEnumerator:
 
                                 batch.append(rec)
                                 n_records += 1
-
+                                # run metadata
                                 if len(batch) >= batch_size:
                                     
                                     # side-effect write

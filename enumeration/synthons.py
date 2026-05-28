@@ -1,24 +1,8 @@
-
-"""Synthon records and mark-based indexing for fast lookup.
-
-Phase 2+ scope:
-- Build an inverted index: mark_type -> synthon_ids
-- Keep minimal metadata in memory (SMILES, marks). RDKit Mol objects are created lazily.
-
-Assumptions
------------
-- Marks in synthon SMILES are always in bracket atom-map form (e.g., [C:10], [n:20]).
-- The mark_type is represented as '{symbol}:{mapnum}' where symbol is aromatic lowercase when appropriate.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple
 import re
-
-
-
 
 
 def extract_marks_from_smiles(smiles: str) -> Tuple[str, ...]:
@@ -66,7 +50,6 @@ class SynthonIndex:
     def ids_with_mark(self, mark_type: str) -> Sequence[int]:
         return self._by_mark.get(mark_type, [])
     
-    # dunder method for length
     def __len__(self) -> int:
         return len(self._records)
 

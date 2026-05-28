@@ -11,6 +11,7 @@ All other chapters of this manual concern usage of SyntOn as a python library in
 
 **Be careful: prior to BBs synthonization the SMILES should be preprocessed and conterions and solvents should be removed. SyntOn-BBs consider every molecule while processing mixture SMILES and for each of them synthons will be generated if possible, therefore take care of them before synthonization**
 
+# CAN REMOVE SECTIONS AND THEN ALSO THE LINKS HERE
 # Table of Contents
 * [Prerequisites](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#prerequisites)
     * [System requirements](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#system-requirements)
@@ -56,7 +57,7 @@ $ conda activate synton_env
 
 ### Compounds preprocessing
 
-All BBs structures need to be sanitized and standardized independently by the user prior to SyntOn usage. Solvents and counterions should be deleted. There is no need to generate major tautomer form as soon as SyntOn will do it for each generated synthons separately.
+All BBs structures need to be sanitized and standardized independently by the user prior to SyntOn usage. Solvents and counterions should be deleted. There is no need to generate major tautomer form as soon as SyntOn will do it for each generated synthons separately. tautology is not what is mentioned here
 
 ## SyntOn-Classifier
 [Back to Table of Contents](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#table-of-contents)
@@ -80,7 +81,7 @@ If the SMILES cannot be processed by RdKit, the following messages will appear:
 [23:37:46] Explicit valence for atom # 8 N, 4, is greater than permitted
 C1CCC(CC1)P([Ir][N]2=CC=CC=C2)(C3CCCCC3)C4CCCCC4.C/1C/C=C\CC/C=C1 was not processed by rdkit
 ```
-As soon as heterocyclization reaction will be available only in SynthOn.2.0, some of the heterocyclization reagents will not be classified in SyntOn.1.0:
+As soon as heterocyclization reaction will be available only in SynthOn.2.0, some of the heterocyclization reagents will not be classified in SyntOn.1.0: not relevant
 
 ```python
 >>> BBClassifier(molSmiles="CCOC=1C=C(CC#N)C=CC1OCC(F)(F)F")
@@ -98,11 +99,11 @@ example below of how to use bulk script easily
 ```shell script
 $ python3 SyntOn/src/SyntOn_Classifier.py -h
 ```
-List of arguments borger (|) (sideways borger really)
+
 ```text
 usage: SyntOn_Classifier [-h] [-i INPUT]
 
-Classification of building blocks. Separates provided library into several sublibraries according to the reagents classess.
+Classification of building blocks. Separates provided library into several sublibraries according to the reagents classess and parts of the molecule.
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -119,14 +120,12 @@ Knowledge base (SMARTS library):    Dmitriy M.Volochnyuk, Sergey V.Ryabukhin, Ko
 
 ```
 As a result, separate files for each BB class found in the provided library file will be created. The name contains both class and subclass names separated by underscore - *SecondaryAmines_Cyc-Aliphatic.smi* or *Acid_Aliphatic_Acid.smi*.
-
-can get rid of above but not below (idk havent really thought about it)
-## SyntOn-BBs 
+research what classes are and what makes something fit into one.
+## SyntOn-BBs
 
 [Back to Table of Contents](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#table-of-contents)
 
-SyntOn-BBs allows to perform scaffold analysis of BBs and generate exhaustively all possible synthons from a given BB. The position of the functional groups as well as type of the resulting intermediate product (cation, anion, radical etc.) is encoded in synthon’s SMILES by introducing special system of labels. 
-
+SyntOn-BBs allows to perform scaffold analysis of BBs and generate exhaustively all possible synthons from a given BB. The position of the functional groups as well as type of the resulting intermediate product (cation, anion, radical etc.) is encoded in synthon’s SMILES by introducing special system of labels.
 
 Cheat sheet here showing example of classes and how their specific tags are assigned.
 |Synthon label | Synthon example | Nature of the reaction center | Example of corresponding reagent classes |
@@ -143,17 +142,15 @@ Cheat sheet here showing example of classes and how their specific tags are assi
 
 
 ### BBs synthonization
-
 [Back to Table of Contents](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#table-of-contents)
 
-If BB contain protective groups, protected synthons will be discarded by default
 
 ```python
 >>> from SyntOn.src.SyntOn_BBs import mainSynthonsGenerator
 >>> mainSynthonsGenerator("CCOC(=O)C1=C(N)SC=C1C2CC2")
 ```
 ```text
-# here some RdKit messages can appear, they can be ignored 
+# here some RdKit messages can appear, they can be ignored or even surpressed in startup (ideally to avoid clutter) ill rubio my chicken for funsies
 ___________________________________________________________________________________________________ 
 All generated synthons (4): O=C(O)c1c(C2CC2)csc1[NH2:20].O=C(O)c1c(C2CC2)csc1[NH2:40].O=[CH:10]c1c(C2CC2)csc1[NH2:20].O=[CH:10]c1c(C2CC2)csc1[NH2:40]
 Col1-Synton Col2-RespectiveBBsClass
@@ -168,7 +165,7 @@ They can be kept if `keepPG=True` is specified:
 >>> mainSynthonsGenerator("CCOC(=O)C1=C(N)SC=C1C2CC2", keepPG=True)
 ```
 ```text
-# here some RdKit messages can appear, they can be ignored
+# here some RdKit messages can appear, they can be ignored 
 ___________________________________________________________________________________________________ 
 All generated synthons (6): CCOC(=O)c1c(C2CC2)csc1[NH2:20].CCOC(=O)c1c(C2CC2)csc1[NH2:40].O=C(O)c1c(C2CC2)csc1[NH2:20].O=C(O)c1c(C2CC2)csc1[NH2:40].O=[CH:10]c1c(C2CC2)csc1[NH2:20].O=[CH:10]c1c(C2CC2)csc1[NH2:40]
 Col1-Synton Col2-RespectiveBBsClass 
@@ -361,7 +358,7 @@ __________________________________________________________
 __________________________________________________________
 
 Synthon: c1nnn(C[CH2:10][OH:20])n1   
-Synthon was not found in provided library of building blocks. 2 analog(s) has/have been found 
+Synthon was not found in provided library of building blocks. 2 analog(s) has/have been found instead
 BB analogues: 
 C[CH:10](c1nc[nH]n1)[OH:20] EN300-137277 
 C[CH:10](c1c[nH]nn1)[OH:20] EN300-7472008 
@@ -401,9 +398,7 @@ This synthetic pathways are organized in a disconnection hierarchy, that can be 
     reagentSet 3 : 
     R10.1_1|R2.2_0 Clc1ccccc1[CH2:10][OH:20].c1nnn([CH3:20])n1.N[CH:10]=O Availability rate (% of atoms of fragmented molecule coming from available synthons): 0.17
     ```
-  
 * *getShortestSyntheticPathways()* - creates a list of the synthetic pathways including only one stage (roots of the hierarchy)
-   
     ```python
     >>> firstLevelSynthonsCombinations = getShortestSyntheticPathways(allSyntheticPathways) 
     >>> for ind,reagentSet in enumerate(firstLevelSynthonsCombinations):
@@ -433,7 +428,7 @@ This synthetic pathways are organized in a disconnection hierarchy, that can be 
     reagentSet 0 :
     R2.2_0|R5.1_0 c1nn[nH:20]n1.Clc1ccccc1C([CH3:10])[OH:20].N[CH:10]=O Availability rate (% of atoms of fragmented molecule coming from available synthons): 0.72 
     ```
-Method *printDetailedReagentsSetInfo()* of the class *syntheticPathway* ( [see detailes here](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#detailed-classes-description) ) can be used for retreiving detailed information about the selected synthetic pathway: 
+Method *printDetailedReagentsSetInfo()* of the class *syntheticPathway* ( [see detailes here](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#detailed-classes-description) )
 
 ```python
 >>> shortestSynthesis[0].printDetailedReagentsSetInfo()  
@@ -481,9 +476,8 @@ __________________________________________________________
 Synthon: N[CH:10]=O
 Available. Corresponding BBs: EN300-50197 
 Parent synthons: -   
-Children synthons: -      
+Children synthons: - 
 ```
-
 ### Selecting customized list of reactions for fragmentation
 
 [Back to Table of Contents](https://github.com/Laboratoire-de-Chemoinformatique/Synt-On#table-of-contents)
@@ -491,7 +485,6 @@ Children synthons: -
 **Mode "include_only"**
 
 Only the reactions, selected by user will be used for fragmentation. The list of RiDs should be specified using argument `reactionsToWorkWith`. The list should be provided inside " "; intervals separated via "-" and "," can be used (e.g. "R1-R10,R11.1-R11.4,R12.1"). Specification "R1" implicitly includes all (R1.1, R1.2, R1.3 and R1.4) subreactions in the group R1.
-  
 ```python
 >>> SyntOnfragmentorIncludeOnlyR1_R9 = fragmentation(fragmentationMode="include_only", reactionsToWorkWith = "R1-R9", 
 ...                                                   maxNumberOfReactionCentersPerFragment=3, MaxNumberOfStages = 5, 
@@ -510,12 +503,10 @@ R5.2_0 c1nn[nH:20]n1.NC(=O)OC(c1ccccc1Cl)[CH3:21] Availability rate (% of atoms 
 R2.2_0|R5.1_0 c1nn[nH:20]n1.Clc1ccccc1C([CH3:10])[OH:20].N[CH:10]=O Availability rate (% of atoms of fragmented molecule coming from available synthons): 0.72 
 R2.2_0|R5.2_0 c1nn[nH:20]n1.Clc1ccccc1C([OH:20])[CH3:21].N[CH:10]=O Availability rate (% of atoms of fragmented molecule coming from available synthons): 0.17 
 ```
-**Mode "exclude_some"**
+**Mode "exclude_some"** exclude some of dis dih. i mean my energy is fried
 
 The list of RiDs of reactions that need to be excluded should be specified using argument `reactionsToWorkWith`.
-
 In the example below all reactions except R5.1 (nH-SN alkylation of NH-heterocycles) will be used for fragmentaion. 
-
 ```python
 >>> SyntOnfragmentorExcludeSomeR5_1 = fragmentation(fragmentationMode="exclude_some", reactionsToWorkWith = "R5.1",
 ...                                                 maxNumberOfReactionCentersPerFragment=3, MaxNumberOfStages = 5, 
