@@ -13,8 +13,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 from datetime import datetime
 
-
-
 def sdf_to_smiles(sdf_path, n=None):
     """Reads all molecules in an SDF file and returns a list of their smiles strings
 
@@ -57,10 +55,10 @@ def smi_to_smiles(smi_path, n=None, canonical=True):
             if line.startswith("#"):
                 continue  # skip comment lines (optional)
 
-            # first token is the SMILES
+            # first token is the SMILES, rest is ignored here
             smi = line.split()[0]
 
-            if canonical:
+            if canonical: # canonical makes sure orfering is consistent
                 mol = Chem.MolFromSmiles(smi)
                 if mol is None:
                     continue  # skip invalid smiles
@@ -93,12 +91,13 @@ def file_with_ext(*extensions, must_exist=True):
     def _checker(val):
         p = Path(val)
 
+        # check if file exists at all (apart from just extension match)
         if must_exist:
             if not p.exists():
                 raise argparse.ArgumentTypeError(f"File does not exist: {p}")
             if not p.is_file():
                 raise argparse.ArgumentTypeError(f"Not a file: {p}")
-            
+        # then check extension match
         if p.suffix.lower() not in exts:
             raise argparse.ArgumentTypeError(f"Expected one of {sorted(exts)} got '{p.suffix}' for: {p}")
         return p
@@ -127,12 +126,11 @@ def main(seed_path,
     #config_path = "SyntOn/config/Setup.xml"
     # build reaction index
     rxn_index = ReactionIndex.from_setup_xml(config_path)
-
-    #sdf_file = "/home2/esi22219/pdbbind_data/9s9o/fragments_no_core.sdf"
     
     # dynamically read seed input
     all_synthons = dict()
     all_smi = []
+
     # .sdf
     if seed_path.suffix == ".sdf":
         smiles = sdf_to_smiles(seed_path)
@@ -152,7 +150,7 @@ def main(seed_path,
 
     seed_smiles = list(all_synthons.keys())
 
-    # build seedspec handles
+    # build seedspec instances
     seeds = []
     if not seed_smiles:
         raise Exception("No provided seeds were able to be synthonized and prepped for enumeration. Please check them and try again")
@@ -160,22 +158,19 @@ def main(seed_path,
     elif len(seed_smiles) == 1:
         
         #print(list_reactive_sites(Chem.MolFromSmiles(seed_smiles[0])))
-        spec = SeedSpec(seed_smiles=seed_smiles[0], seed_id=f"seed_1")
+        spec = SeedSpec(seed_smiles=seed_smiles[0], seed_id="seed_1", allowed_sites=[0])
         seeds.append(spec)
         #print(seed, extract_marks_from_smiles(seed))
 
     else:
         for i, seed in enumerate(seed_smiles):
             #print(list_reactive_sites(Chem.MolFromSmiles(seed)))
-            spec = SeedSpec(seed_smiles=seed, seed_id=f"seed_{i}")
+            spec = SeedSpec(seed_smiles=seed, seed_id=f"seed_{i}", allowed_sites=[0])
             seeds.append(spec)
             #print(seed, extract_marks_from_smiles(seed))
     print("processed seeds\n")
 
-    #smi_synthon_path = "/home2/esi22219/notebooks/synton_results/full_run_Synthmode.1.smi"
-
-    #syn_index = SynthonIndex.from_smi_file(smi_synthon_path)
-    # synthon index using output from BulkSynthon
+    # synthon index using output from BulkSynthon _Synthmode.smi
     syn_index = SynthonIndex.from_smi_file(synthon_path)
     
     # sanity check
@@ -189,10 +184,12 @@ def main(seed_path,
         rng_seed=rng_seed,
         invalid_site_policy="error",  # or "warn_skip_seed"
     )
-
+    # just return both named even if one is still empty/None so no matter whet it can be there
     gen, summary = enum.enumerate(seeds, batch_size=batch_size, output_mode=running_mode, out_dir=output_dir, run_id=run_id)
 
     return gen, summary
+
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -200,7 +197,7 @@ if __name__ == "__main__":
     parser.add_argument("--seeds", 
                         type = file_with_ext(".sdf", ".smi"), 
                         required=True, 
-                        help = "Path to seeds (sdf or smi file)")
+                        help = "Path to seeds/scaffolds (sdf or smi file)")
     
     parser.add_argument("--synthons", 
                         type = file_with_ext(".smi"), 
