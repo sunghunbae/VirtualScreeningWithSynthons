@@ -56,7 +56,9 @@ def smi_to_smiles(smi_path, n=None, canonical=True):
                 continue  # skip comment lines (optional)
 
             # first token is the SMILES, rest is ignored here
-            smi = line.split()[0]
+            parts = line.split(maxsplit=1)       
+            smi = parts[0]
+            name = parts[1].strip() if len(parts) > 1 else None
 
             if canonical: # canonical makes sure orfering is consistent
                 mol = Chem.MolFromSmiles(smi)
@@ -64,7 +66,7 @@ def smi_to_smiles(smi_path, n=None, canonical=True):
                     continue  # skip invalid smiles
                 smi = Chem.MolToSmiles(mol, canonical=True)
 
-            smiles.append(smi)
+            smiles.append((smi, name))
 
             if n is not None and len(smiles) >= n:
                 break
@@ -128,27 +130,49 @@ def main(seed_path,
     rxn_index = ReactionIndex.from_setup_xml(config_path)
     
     # dynamically read seed input
-    all_synthons = dict()
+    all_synthons = []
+    all_names = []
     all_smi = []
 
     # .sdf
     if seed_path.suffix == ".sdf":
+        pass
         smiles = sdf_to_smiles(seed_path)
 
-        for smi in smiles:
+        for i, (smi, seed_name) in enumerate(smiles, start=1):
             all_smi.append(smi)
             synthons = mainSynthonsGenerator(smi, returnDict=True)
-            all_synthons.update(synthons)
+            max_len = -1
+            current_name = None
+            for key, cls in synthons.items():
+                if len(list_reactive_sites(Chem.MolFromSmiles(key))) > max_len:
+                    max_len = len(list_reactive_sites(Chem.MolFromSmiles(key)))
+                    current_synthons = key
+                    current_name = seed_name
+           
+            all_synthons.append(current_synthons)
+            all_names.append(current_name)
        
-    # .smi
+    # .smi and ensure only one synthon (the all encompassing) 
     else:
         smiles = smi_to_smiles(seed_path)
-        for smi in smiles:
+        for i, (smi, seed_name) in enumerate(smiles, start=1):
             all_smi.append(smi)
             synthons = mainSynthonsGenerator(smi, returnDict=True)
-            all_synthons.update(synthons)
+            max_len = -1
+            current_name = None
+            for key, cls in synthons.items():
+                if len(list_reactive_sites(Chem.MolFromSmiles(key))) > max_len:
+                    max_len = len(list_reactive_sites(Chem.MolFromSmiles(key)))
+                    current_synthons = key
+                    current_name = seed_name
+           
+            all_synthons.append(current_synthons)
+            all_names.append(current_name)
+            # if len(all_synthons) > 6:
+            #     break
 
-    seed_smiles = list(all_synthons.keys())
+    seed_smiles = all_synthons
 
     # build seedspec instances
     seeds = []
@@ -165,12 +189,12 @@ def main(seed_path,
     else:
         for i, seed in enumerate(seed_smiles):
             #print(list_reactive_sites(Chem.MolFromSmiles(seed)))
-            spec = SeedSpec(seed_smiles=seed, seed_id=f"seed_{i}", allowed_sites=[0])
+            spec = SeedSpec(seed_smiles=seed, seed_id=f"{all_names[i]}", allowed_sites=[0])
             seeds.append(spec)
-            #print(seed, extract_marks_from_smiles(seed))
-    print("processed seeds\n")
-
-    # synthon index using output from BulkSynthon _Synthmode.smi
+            if len(seeds) > 5:
+                break
+            #print(seed, list_reactive_sites((Chem.MolFromSmiles(seed))))
+    
     syn_index = SynthonIndex.from_smi_file(synthon_path)
     
     # sanity check
@@ -184,11 +208,11 @@ def main(seed_path,
         rng_seed=rng_seed,
         invalid_site_policy="error",  # or "warn_skip_seed"
     )
-    # just return both named even if one is still empty/None so no matter whet it can be there
+   
+    #  return both named even if one is still empty/None
     gen, summary = enum.enumerate(seeds, batch_size=batch_size, output_mode=running_mode, out_dir=output_dir, run_id=run_id)
 
     return gen, summary
-
 
 
 if __name__ == "__main__":
@@ -235,14 +259,14 @@ if __name__ == "__main__":
                         help = "Random seed for when using random site selection during enumeration")
     
     args = parser.parse_args()
-
+   
     if args.mode != "stream" and not args.output_dir:
         parser.error("-o/--output_dir is required for --mode parquet/both")
 
     if args.output_dir:
         out_path = Path(args.output_dir)
 
-    main(seed_path = args.seeds,
+    gen, summary = main(seed_path = args.seeds,
          synthon_path = args.synthons,
          config_path = args.rxn_config,
          running_mode = args.mode,
@@ -250,3 +274,7 @@ if __name__ == "__main__":
          batch_size = args.batch_size,
          run_id = args.run_name,
          rng_seed = args.rng_seed)
+    if gen:
+        # do additional analysis on generator here
+        for batch in gen: 
+            pass

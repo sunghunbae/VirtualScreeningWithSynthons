@@ -1,27 +1,13 @@
-
-"""Single-step synthon enumeration.
-
-Implements:
-- One synthon addition per product.
-- Deterministic site listing based on canonicalized seeds (uses standardization + sites modules).
-- Reaction filtering via ReactionIndex.
-- Candidate selection via SynthonIndex.
-- Output modes: stream | parquet | stream+parquet.
-
-This module is intended as the production enumerator core.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Any
+from typing import Dict, Iterator, List, Optional, Sequence, Tuple, Any
 import hashlib
 import logging
 import random
-
+import json, os
 from rdkit import Chem
-from rdkit.Chem import rdChemReactions
-from enumeration.standardization import canonicalize_seed_smiles, StandardizedSeed
+from enumeration.standardization import canonicalize_seed_smiles
 from enumeration.sites import list_reactive_sites, resolve_allowed_sites, ReactiveSite
 from enumeration.reactions import ReactionIndex
 from enumeration.synthons import SynthonIndex
@@ -244,7 +230,7 @@ class SingleStepEnumerator:
                     continue
             
                 
-                # Seed mol used repeatedly; synthon mol created lazily. set here to match
+                # Seed mol used repeatedly, synthon mol created lazily. set here to match
                 seed_mol = can_mol
                 seed_mol = prep_mol_for_enum([seed_mol])[0]
                
@@ -391,7 +377,7 @@ class SingleStepEnumerator:
 
     def get_last_summary(self, out_dir: str) -> Optional[OutputSummary]:
         """Convenience to read manifest from a parquet out_dir."""
-        import json, os
+
         mp = os.path.join(out_dir, 'manifest.json')
         if not os.path.exists(mp):
             return None

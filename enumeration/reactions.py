@@ -159,11 +159,7 @@ class ReactionIndex:
         """
         Idea is to filter or select specific allowed reactions and ignore the others
         """
-        # ooga boooga
-        # need to be able to filter by id and other features or attributes as well
-        # here is an example of how it can easily be done for selective reactions, very easy
-        # probably can even set up in init, i dont think a new function is even necesary but oh well here it is
-        # this assumes we pass the allowed at a separate time, and not at initiation but can change that functionality
+        
         if not allowed_set:
             self._templates = self._templates
         else:

@@ -10,7 +10,7 @@ def get_feature_factory():
     fdef = os.path.join(RDConfig.RDDataDir, 'BaseFeatures.fdef')
     return ChemicalFeatures.BuildFeatureFactory(fdef)
 
-
+g
 def extract_features(mol, factory):
     feats = factory.GetFeaturesForMol(mol)
 
@@ -18,14 +18,14 @@ def extract_features(mol, factory):
     for f in feats:
         pos = f.GetPos()
         feature_list.append((
-            f.GetFamily(),  # Donor, Acceptor, Aromatic, Hydrophobe, etc.
+            f.GetFamily(),  # Donor, Acceptor, Aromatic, Hydrophobe, etc. or not even mention if npt brought up otherwise
             (pos.x, pos.y, pos.z)
         ))
 
     return feature_list
 
 def build_pharmacophore(ref_mols_3d, factory):
-    # extracts features from mol and builds a list
+    # extracts features from mol and builds a list of features and coordinates
     pharm_features = []
 
     for mol in ref_mols_3d:
@@ -38,7 +38,7 @@ def distance(p1, p2):
     return np.linalg.norm(np.array(p1) - np.array(p2))
 
 def match_features(pharm_feats, ligand_feats, tolerance=1.5):
-    # takes two features lists and counts overlaps of features within <tolerance> distanc from each other
+    # takes two features lists and counts overlaps of features within <tolerance> distanc from each other.
     matches = 0
 
     for p_type, p_pos in pharm_feats:
@@ -50,7 +50,6 @@ def match_features(pharm_feats, ligand_feats, tolerance=1.5):
             if distance(p_pos, l_pos) <= tolerance:
                 matches += 1
                 break
-
     return matches
 
 

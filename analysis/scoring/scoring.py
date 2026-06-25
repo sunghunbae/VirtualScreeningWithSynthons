@@ -381,7 +381,7 @@ if __name__ == "__main__":
                         help="combined SDF containing top docked poses for pharmacophore scoring"
                     )
     args = parser.parse_args()
-    #non_dupes = manifest[manifest.duplicate == False]
+   
 
 
 

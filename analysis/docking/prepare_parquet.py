@@ -1,33 +1,4 @@
 #!/usr/bin/env python3
-"""
-High-throughput ligand preparation for AutoDock / Vina-family docking from
-parquet enumeration outputs.
-
-Design goals:
-- Stream parquet records in batches when possible (pyarrow)
-- RDKit -> Meeko -> direct PDBQT output
-- No per-ligand intermediate SDF files
-- Shard outputs into docking-friendly directories
-- Write a global manifest and an error log
-- Resume safely if output PDBQT already exists
-- Preserve provenance back to source parquet / run_id / route_id
-
-Expected parquet columns per record include at least:
-  route_id, run_id, product_smiles
-Additional lineage fields (seed_id, synthon_id, reaction_id, reaction_name, ...)
-are carried into the manifest when present.
-
-Requires:
-  rdkit
-  meeko
-  pandas
-Recommended for scalable parquet streaming:
-  pyarrow
-Optional for receptor prep:
-  pdb2pqr30
-  AutoDockTools
-"""
-
 import argparse
 import csv
 import hashlib
@@ -50,12 +21,9 @@ from tqdm import tqdm
 import pyarrow.parquet as pq
 
 
-
-# -----------------------------
 # General helpers
-# -----------------------------
-SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
 
+SAFE_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
 
 def safe_filename(text: str, max_len: int = 120) -> str:
     text = (text or "").strip()
@@ -104,18 +72,6 @@ def batched(iterable, n):
         yield batch
 
 def clean_marked_product_smiles(product_smiles: str, placeholder_symbols=("W","V","Rf", "Db", "Sg", "Rh5",), placeholder_atomic_nums=(0,)):
-    """
-    Convert an enumerated product SMILES containing residual synthon marks / placeholders
-    into a dockable RDKit molecule.
-
-    Current behavior:
-    - removes placeholder atoms such as terminal [W]
-    - removes atom-map numbers (e.g. :20)
-    - repairs aromatic [n]([W]) -> [nH] when the placeholder was acting as a cap
-
-    Returns:
-      (clean_mol, clean_smiles, removed_placeholder_count)
-    """
     mol = Chem.MolFromSmiles(product_smiles, sanitize=True)
     if mol is None:
         raise ValueError("RDKit failed to parse product_smiles")
@@ -180,10 +136,7 @@ def clean_marked_product_smiles(product_smiles: str, placeholder_symbols=("W","V
 
     return mol, clean_smiles, len(remove_idxs), dedupe_key
 
-
-# -----------------------------
 # Parquet streaming
-# -----------------------------
 
 def count_parquet_rows(parquet_files):
     total = 0
@@ -218,9 +171,8 @@ def iter_parquet_records(parquet_path: Path, batch_rows: int = 5000):
         yield source_idx, rec
 
 
-# -----------------------------
+
 # Ligand ID / provenance logic
-# -----------------------------
 def ligand_stub_from_record(source_file: str, run_id: str, route_id: str) -> str:
     source_stem = Path(source_file).stem
     run_id = normalize_text(run_id) or "run"
@@ -231,9 +183,7 @@ def ligand_stub_from_record(source_file: str, run_id: str, route_id: str) -> str
     return f"{base_safe}__{digest}"
 
 
-# -----------------------------
 # 3D handling
-# -----------------------------
 def has_3d(mol) -> bool:
     if mol.GetNumConformers() == 0:
         return False
@@ -264,10 +214,7 @@ def ensure_3d(mol):
 
     return mol
 
-
-# -----------------------------
 # Worker
-# -----------------------------
 def prepare_one(task):
     """
     Worker payload:
@@ -355,7 +302,6 @@ def prepare_one(task):
         preparator = MoleculePreparation(rigid_macrocycles=True)
         setups = preparator.prepare(mol)
         
-        # meeko has its own setup format and workflow so it need to be initialized biggus dickus i need to do something positive with my life here. I need to improve my life here. what am i doing here  I dont knoe wha tht epurpose of my life is
         if not setups:
             raise ValueError("Meeko returned no setups")
         # returns a string which can be immediatly parsed or saved using below function from meeko
@@ -389,13 +335,11 @@ def prepare_one(task):
         return {**base_result, "status": "ok"}
 
     except Exception as e:
-        #print("fail here")/
         return {**base_result, "status": "error", "error": str(e)}
 
 
-# -----------------------------
 # Optional receptor prep
-# -----------------------------
+
 def strip_waters_from_pdb(in_pdb: Path, out_pdb: Path):
     with open(in_pdb) as f:
         lines = [l for l in f if l.startswith("ATOM") or l.startswith("HETATM")]
@@ -438,9 +382,8 @@ def prepare_receptor_legacy(pdb_path: Path, out_pdbqt: Path, del_water: bool = F
         )
 
 
-# -----------------------------
 # Flat PDBQT finalization for QuickVina2-GPU
-# -----------------------------
+
 def finalize_flat_pdbqt_dir(
     manifest_path: Path,
     flat_dir: Path,
@@ -538,9 +481,7 @@ def finalize_flat_pdbqt_dir(
     }
 
 
-# -----------------------------
 # Main
-# -----------------------------
 def main():
     parser = argparse.ArgumentParser(
         description="Scalable ligand preparation for parquet-based virtual screening libraries."
@@ -703,9 +644,8 @@ def main():
     total_skipped = 0
     total_error = 0
 
-    # spawn is safer with many cheminformatics libs than fork on some systems
     mp_ctx = mp.get_context("spawn")
-
+    # typey type type stall anbd let it go
     pbar = tqdm(
             total=total_rows,
             desc="Preparing Ligands",

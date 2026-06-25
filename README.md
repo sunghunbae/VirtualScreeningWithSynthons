@@ -140,13 +140,13 @@ Single-step enumeration engine
 
 
 ### Analysis
-Here is where you can find files related to analyis of generated molecules. This includes docking with associated preparation, as well as other common forms of scoring. 
+Here is where you can find files related to analyis of generated molecules. This includes docking with associated preparation, as well as other common forms of scoring. Please refer to the [README](analysis/README.md) there for more information and what kind of scoring you can do.
 
 ---
 
 ## Installation and Usage
 ### Dependencies
-<!-- The list of required packages for enumeration is fairly light, only requring the following:
+<!-- The list of required packages for enumeration is fairly light, only requring the following: but still use the .yml file for installation and remove this
 - Python 3.9+
 - RDKit
 - PyArrow (required for Parquet output modes)
@@ -154,7 +154,7 @@ Here is where you can find files related to analyis of generated molecules. This
 If preferred you can install them using any package manager (conda/pixie) and version of preference. Additionally, you may install the conda env with the following command for a more comprehensive environment. -->
 You can install the required dependencies for synthon generation and enumeration with the following command
 ```bash
-conda env create -f synthons_environment.yaml
+conda env create -f environment.yaml
 ```
 
 ### Synthon Generation
@@ -216,6 +216,7 @@ options:
   -h, --help            show this help message and exit
   --seeds SEEDS         Path to seeds/scaffolds (sdf or smi file)
   --synthons SYNTHONS   Path to synthons (smi file)
+  --site_id             (Optional) Choose a specific reaction center to enumerate from. Chosen randomly if not provided.
   --rxn_config RXN_CONFIG
                         Path to reaction setup configuration file
   --mode {stream,parquet,both}
@@ -294,20 +295,6 @@ The results of every run contains all of the information to understand and trace
 - Avoid materializing huge lists: prefer `stream` or `stream+parquet` for large jobs.
 
 ---
-
-## Roadmap
-
-Planned extensions (not necessarily implemented yet):
-
-- Multi-step enumeration (iterative growth up to `max_reaction_steps`)
-- Constraints on number of reacted sites per seed (`max_sites_reacted`)
-- Advanced site targeting (SMARTS-context selection)
-- Optional product deduplication strategies (route-preserving vs product-unique)
-- Parallel/distributed enumeration strategies (per-seed sharding, per-worker Parquet shards)
-
-
----
-
 
 ## Contributing
 

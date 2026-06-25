@@ -16,6 +16,7 @@ The pipeline prioritizes **reproducibility, automation, GPU efficiency**, and **
 
 ---
 
+
 ## 2. Pipeline Overview
 
 ```text
@@ -53,35 +54,17 @@ Docking outputs
 ├── logs
 └── scores and metadata embedded in output PDBQT files
 ```
-
 ---
 
 ## 3. Software & Environment
 
-### 3.1 Required Software (change to yaml file for easier use)
+### 3.1 Required Software 
+The environment for scoring and docking require different tools than enumeration. Please run the following command
 
-- **Python ≥ 3.8**
-- **RDKit** (coordinate handling, InChIKey)
-- **OpenBabel + pybel** (ligand I/O)
-- **Meeko** (ligand → PDBQT preparation for AutoDock family)
-- **AutoDockTools** (receptor PDBQT preparation)
-- **pdb2pqr30** (protein protonation)
-- **QuickVina2‑GPU‑2‑1** (GPU docking engine; **fixed for now**)
-- **CUDA‑capable GPU / OpenCL runtime**
-
-### 3.2 Suggested Environment Setup (example) run from yaml
 ```bash
-# Create a conda env with common cheminformatics stack
-make a yaml instead of this manual install
-conda create -n docking python=3.10 rdkit -c conda-forge
-conda activate docking
-conda install openbabel -c conda-forge
-pip install meeko tqdm
-# AutoDockTools and pdb2pqr installation vary by system; ensure they are on PATH
-# Install/compile QuickVina2-GPU and note the folder path (e.g., /opt/qvina_gpu)
-```
+conda env create -f environment_docking.yml
 
----
+```
 
 ## 4. Script 1 — `prep_data_files.py`
 
@@ -126,7 +109,7 @@ The chosen ID is written to:
 - The **SDF title** of the split ligand and
 - The **PDBQT** as a header line: `REMARK Name = <ligand_id>`
 
-This enables robust **traceability**, **reproducible re‑runs**, and **post‑hoc mapping** back to the generator model.
+This enables robust **traceability**, **reproducible re‑runs**, and **post‑hoc mapping** back to the generator model. 4:56 if it raches there, im out thats for sure
 
 ### 4.5 Receptor Preparation Steps
 For the single `*.pdb` file:
@@ -162,8 +145,8 @@ python prep_data_files.py INPUT_DIR \
 
 ## 5. Script 2 — `qvina_gpu_dock.py`
 
-
-### 5.1 Purpose
+i mean sure, the world is fuckaroonskied, everything is a problem
+### 5.1 Purpose of process
 Runs **QuickVina2‑GPU‑2‑1** docking using:
 - **One receptor** (`*_rec.pdbqt`)
 - **Many ligands** (directory of ligand PDBQTs)
@@ -205,7 +188,7 @@ python qvina_gpu_dock.py \
 - `--threads` — GPU sampling threads for mp (default: `5000`) 
 - `--config_prefix` — prefix for the generated config filename
 
-### 5.5 End‑to‑End Example calling of preperation and docking
+### 5.5 End‑to‑End Example calling of Preperation and Docking Scripts
 ```bash
 # Step 1: Prepare inputs
 python prep_data_files.py raw_inputs \
@@ -219,7 +202,7 @@ python prep_data_files.py raw_inputs \
     --outdir docking_inputs \
     --nproc 4
 
-# Step 2: Run docking using the co‑crystal ligand to define the box
+# Step 2: Run docking using the co‑crystal ligand to define the box to search pose configurations
 python qvina_gpu_dock.py \
     --receptor docking_inputs/protein_rec.pdbqt \
     --ligand_dir docking_inputs/pdbqt_ligands \
@@ -240,11 +223,11 @@ pdbqt_ligands/
 ├── ligand0_out.pdbqt
 ├── ligand1_out.pdbqt
 ├── ...
-└── log.txt (engine log; location may vary by build/config)
+└── log.txt (engine log)
 ```
 
 ### 6.1 Scores & Poses
-- Output PDBQT files can contain **multiple poses** per ligand, as defined in the configuration, usually ~10 is standard.
+- Output PDBQT files can contain **multiple poses** per ligand, as defined in the configuration, usually ~10 is standard (9 is the config default) but some ligands may only have 1-2 poses that do not clash with the pocket.
 - Binding **affinity scores** (in kcal/mol) are embedded in the output PDBQT records.
 - **Lower (more negative)** scores indicate stronger predicted binding affinity.
 
@@ -255,8 +238,6 @@ pdbqt_ligands/
 > Tip: keep `ligand_index.tsv` and the final `config.txt` with your result set for full provenance and easier recollection of ran tests.
 
 ### 6.3 Additional Analysis of outputs
-I dont know what to put here
-this is a a useless section
 Insatllation for pyvol can be done by the following steps but i dont know why you would, especially from github and not pypi/conda:
 ```bash
 git clone https://github.com/schlessinger-lab/pyvol.git
@@ -265,8 +246,8 @@ python setup.py (to view details about the package)
 ```
 ---
 
-## 7. Best Practices for something, idk what tho
-just genreal tips for pre docking it seems, otherwise i got nothing
+## 7. Best Practices for Docking Usage
+
 - Use a **co‑crystallized ligand** for the bounding box estimatation and visually validate the pocket center the first time for a new target.
 - Keep **one receptor per run** and isolate seperate runs into separate locations.
 - Version your **AI ligand generators** and store the exact prompt/model hash alongside `ligand_index.tsv` for easier.
@@ -275,52 +256,7 @@ just genreal tips for pre docking it seems, otherwise i got nothing
 
 ---
 
-## 8. Troubleshooting
-If you have erros during setup or usage, some of the common pitfals and potential fixes are listed here:
-
-| Symptom                        | Likely Cause                                   | Mitigation                                                                             |
-| ------------------------------ | ---------------------------------------------- | -------------------------------------------------------------------------------------- |
-| No/poor poses for most ligands | Misplaced search box                           | Recheck reference ligand; enlarge `--buffer` or `--min_size`; visualize box.           |
-| GPU not used / errors          | OpenCL/CUDA mismatch or missing device         | Verify GPU drivers; ensure QuickVina2‑GPU sees the device; confirm `--qvina_bin` path. |
-| Some ligands skipped           | Existing output files or malformed SDF entries | Inspect console logs; validate SDF; re‑export problematic molecules.                   |
-| Duplicated ligands             | Upstream generator emitted repeats             | Rely on `ligand_id` mapping; deduplicate by InChIKey before docking.                   |
-| Receptor prep fails            | Missing `pdb2pqr30` or ADT scripts             | Ensure tools are installed and on PATH; try without `--del_water` to isolate issues.   |
-
----
-
-## 9. Reproducibility Checklist Ensuring everything can be found later
-
-including input files, not just results. that could easily be interpreted from the first checklist item but here i go anyway, wasting my life and time doing nothing particularly useful. im getting a bit loopy, this is not great tbh
-- [ ] Archive the **input SDF(s)** and receptor **PDB** used.
-- [ ] Preserve `ligand_index.tsv` and the generated `*_config.txt`.
-- [ ] Record the **QuickVina2‑GPU** build (here: `QuickVina2-GPU-2-1`) and the **exact command line** used.
-- [ ] Record **script versions** and environment (Python, RDKit, OpenBabel, Meeko, ADT, pdb2pqr30).
-
-If all are checked, then something or other, im not sure, i dont really feel like it means anything
-if there is text after the slash, its just treated as slash, otherwise its a line break. I actualyl have learned something! maybe when i have an interview in like never I can mention my markdown skills lol
-
----
-
-## 10. Frequently Asked Questions
-**Q: Can I use more than one receptor in a single run?**  
-A: This pipeline is intentionally scoped to **one receptor per run**. Create separate run directories for additional receptors.
-
-**Q: Can the box be defined manually?**  
-A: Not in the current script; it auto‑derives from the co‑crystal. You can extend `qvina_gpu_dock.py` to accept manual `center_*` and `size_*` if needed.
-
-**Q: Can I switch QuickVina versions?**  
-A: The script currently assumes `QuickVina2-GPU-2-1`. You can change the binary name/path later, but it’s **fixed for now** by design.
-
----
-
-## 11. Acknowledgements
-- QuickVina2‑GPU authors and the AutoDock community
-- RDKit and OpenBabel contributors
-- Meeko developers
-
----
-
-## 12. Citation / Credit
+## 8. Citation / Credit
 If you use this pipeline in research, please cite the relevant tools (QuickVina, RDKit, OpenBabel, Meeko, AutoDockTools, pdb2pqr) according to their licenses and citation guidelines.
 
 
